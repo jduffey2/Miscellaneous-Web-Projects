@@ -19,8 +19,9 @@ var WebChart = function(container, jsonData) {
 }
 
 WebChart.prototype.initilize = function() {
-	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-	svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
+	var namespace = "http://www.w3.org/2000/svg";
+	var svg = document.createElementNS(namespace, "svg");
+	svg.setAttribute("xmlns",namespace);
 	svg.setAttribute('width', 600);
 	svg.setAttribute('height', 400);
 	this.con.appendChild(svg);
@@ -28,9 +29,31 @@ WebChart.prototype.initilize = function() {
 	var yCenter = 400 / 2;
 	var radius = (400 - 50) / 2;
 	var gridlines = [];
+	//Add the background gradient
+	var grad = this.Cdata.base.bgcolor.split(",");
+	var def = document.createElementNS(namespace, "defs");
+	var lg = document.createElementNS(namespace, "linearGradient");
+	svg.appendChild(def);
+	lg.setAttribute("id","bgGradient");
+	lg.setAttribute("x1","0%");
+	lg.setAttribute("y1","0%");	
+	lg.setAttribute("x2","100%");
+	lg.setAttribute("y2","0%");
+	for(var a = 0; a < grad.length; a++) {
+		var stop = document.createElementNS(namespace, "stop");
+		stop.setAttribute("style","stop-opacity:" +  parseFloat(this.Cdata.base.bgAlpha) + ";stop-color:" + grad[a] + ";");
+		stop.setAttribute("offset",(a * 100) + "%");
+		lg.appendChild(stop);
+	}
+	def.appendChild(lg);
+	var bg = document.createElementNS(namespace, "rect");
+	bg.setAttribute("width","600");
+	bg.setAttribute("height","400");
+	bg.setAttribute("style","fill:url(#bgGradient)");
+	svg.appendChild(bg);
 
 	//Add the header caption
-	var heading = document.createElementNS("http://www.w3.org/2000/svg", "text");
+	var heading = document.createElementNS(namespace, "text");
 	heading.setAttribute("x", 10);
 	heading.setAttribute("y", 20);
 	heading.setAttribute("fill", this.Cdata.base.baseFontColor);
@@ -42,10 +65,10 @@ WebChart.prototype.initilize = function() {
 	for(var j = 0; j < parseInt(this.Cdata.base.gridlines); j++) {
 		gridlines[j] = "";
 	}
-	//Draw the spokes of the web, based on the first set's lenth, following sets must have the same number of elements
+	//Draw the spokes of the web, based on the heading.label's lenth, sets must have the same number of elements
 	for(var i = 0; i < parseInt(this.Cdata.header.labels.length); i++) {
-		var angle = i * 2 * Math.PI / parseInt(this.Cdata.sets[0].set.length);
-		var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		var angle = (i * 2 * Math.PI / parseInt(this.Cdata.header.labels.length)) - (Math.PI / 2);
+		var line = document.createElementNS(namespace, "line");
 		line.setAttribute("x1", xCenter + (radius * Math.cos(angle)));
 		line.setAttribute("y1", yCenter + (radius * Math.sin(angle)));
 		line.setAttribute("x2", xCenter);
@@ -54,7 +77,7 @@ WebChart.prototype.initilize = function() {
 		svg.appendChild(line);
 
 		//Add the labels to the chart
-		var nlabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+		var nlabel = document.createElementNS(namespace, "text");
 		nlabel.setAttribute("x", xCenter + ((radius + 10)* Math.cos(angle)));
 		nlabel.setAttribute("y", yCenter + ((radius + 10) * Math.sin(angle)));
 		nlabel.setAttribute("fill", this.Cdata.base.baseFontColor);
@@ -69,57 +92,69 @@ WebChart.prototype.initilize = function() {
 			gridlines[j] += (xCenter + (radius * Math.cos(angle) * (1 - (j / parseInt(this.Cdata.base.gridlines))))) + "," + (yCenter + (radius * Math.sin(angle) * (1 - (j / parseInt(this.Cdata.base.gridlines))))) + " ";
 		}
 	}
+	var maximum = this.Cdata.numeral.max;
+	var minimum = this.Cdata.numeral.min;
+	for(var s in this.Cdata.sets) {
+		for(var point = 0; point < this.Cdata.sets[s].set.length; point++) {
+			maximum = Math.max(maximum, Math.ceil(parseInt(this.Cdata.sets[s].set[point].value)/5)*5);
+			minimum = Math.min(minimum, Math.floor(parseInt(this.Cdata.sets[s].set[point].value)/5)*5);
+		}
+	}
+	minimum = Math.max(minimum, 0);
+
 	//Add the gridlines around the web
 	for(var j = 0; j < parseInt(this.Cdata.base.gridlines); j++) {
-		var poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+		var poly = document.createElementNS(namespace, "polygon");
 		poly.setAttribute("style", "stroke:" + this.Cdata.base.color + ";stroke-width:" + this.Cdata.base.linewidth + ";fill:none;");
 		poly.setAttribute("points", gridlines[j]);
 		svg.appendChild(poly);
 
 		//Add gridline values
 		var omega = -(Math.PI / parseInt(this.Cdata.header.labels.length));
-		var gridLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+		var gridLabel = document.createElementNS(namespace, "text");
 		gridLabel.setAttribute("x", (xCenter + (radius * Math.cos(omega) *(1 - (j / parseInt(this.Cdata.base.gridlines))))));
 		gridLabel.setAttribute("y",( yCenter + (radius * Math.sin(omega) *(1 - (j / parseInt(this.Cdata.base.gridlines))))));
 		gridLabel.setAttribute("fill", this.Cdata.base.baseFontColor);
 		gridLabel.setAttribute("style","font-family:" + this.Cdata.base.baseFont + ";");
-		var text = document.createTextNode((parseInt(this.Cdata.base.min) + ((parseInt(this.Cdata.base.max) - parseInt(this.Cdata.base.min)) * (1 - (j / parseInt(this.Cdata.base.gridlines))))).toFixed(parseInt(this.Cdata.numeral.decimals)));
+		var text = document.createTextNode(this.Cdata.numeral.dataPrefix + (minimum + (maximum - minimum)) * (1 - (j / parseInt(this.Cdata.base.gridlines))).toFixed(parseInt(this.Cdata.numeral.decimals)) + this.Cdata.numeral.dataSuffix);
 		gridLabel.appendChild(text);	
 		svg.appendChild(gridLabel);
 	}
 	//Add label for the center
-	var gridLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+	var gridLabel = document.createElementNS(namespace, "text");
 	gridLabel.setAttribute("x", xCenter + 5);
 	gridLabel.setAttribute("y", yCenter - 5);
 	gridLabel.setAttribute("fill", this.Cdata.base.baseFontColor);
 	gridLabel.setAttribute("style","font-family:" + this.Cdata.base.baseFont + ";");
-	var text = document.createTextNode((parseInt(this.Cdata.base.min)).toFixed(parseInt(this.Cdata.numeral.decimals)));
+	var text = document.createTextNode(this.Cdata.numeral.dataPrefix + (minimum).toFixed(parseInt(this.Cdata.numeral.decimals)) + this.Cdata.numeral.dataSuffix);
 	gridLabel.appendChild(text);	
 	svg.appendChild(gridLabel);
 
 	//Render the Actual Points on the Web Chart
 	for(var s in this.Cdata.sets) {
 		var points = "";
-		for(var point = 0; point < parseInt(this.Cdata.sets[s].set.length); point++) {
-			var angle = point * 2 * Math.PI / parseInt(this.Cdata.sets[s].set.length);
-			var newx = xCenter + (radius * Math.cos(angle) * ((parseInt(this.Cdata.sets[s].set[point].value) - parseInt(this.Cdata.base.min)) / (parseInt(this.Cdata.base.max) - parseInt(this.Cdata.base.min))));
-			var newy = yCenter + (radius * Math.sin(angle) * ((parseInt(this.Cdata.sets[s].set[point].value) - parseInt(this.Cdata.base.min)) / (parseInt(this.Cdata.base.max) - parseInt(this.Cdata.base.min))));
+		for(var point = 0; point < this.Cdata.sets[s].set.length; point++) {
+			var angle = (point * 2 * Math.PI / parseInt(this.Cdata.sets[s].set.length))  - (Math.PI / 2);
+			var delta = (parseInt(this.Cdata.sets[s].set[point].value) - minimum) / (maximum - minimum);
+			var newx = xCenter + (radius * Math.cos(angle) * delta);
+			var newy = yCenter + (radius * Math.sin(angle) * delta);
 			points += newx + "," + newy + " ";
-			var dataPoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			var dataPoint = document.createElementNS(namespace, "circle");
 			dataPoint.setAttribute("cx", newx);
 			dataPoint.setAttribute("cy", newy);
 			dataPoint.setAttribute("style","fill:" + this.Cdata.sets[s].color + ";");
 			dataPoint.setAttribute("r", parseInt(this.Cdata.base.nodeRadius));
 			svg.appendChild(dataPoint);
+
+			//Create the tooltip containing the label and value to the data points
+			var tip = document.createElementNS(namespace, "title");
+			tip.textContent = this.Cdata.sets[s].set[point].tipText + " | "  + this.Cdata.numeral.dataPrefix + this.Cdata.sets[s].set[point].value + this.Cdata.numeral.dataSuffix;
+			dataPoint.appendChild(tip);
 		}
-		var poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-		var isFill = parseInt(this.Cdata.sets[s].showFill);
-		var styling = "";
-		if(1== isFill) {
+		var poly = document.createElementNS(namespace, "polygon");
+		var styling = "none";
+		if(1== parseInt(this.Cdata.sets[s].showFill)) {
 			styling = this.Cdata.sets[s].fillColor;
-		}
-		else {
-			styling = "none";
 		}
 		poly.setAttribute("style", "stroke:" + this.Cdata.sets[s].color + ";stroke-width:" + this.Cdata.sets[s].width + ";fill:" + styling + ";");
 		poly.setAttribute("points", points);
