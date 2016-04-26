@@ -1,0 +1,91 @@
+<!-- spinner.html
+	 Author: Jason Duffey
+	 Date: 05/2015
+	 A simple little experiment of two spinning lines
+	 Exploring geometry calculations in JS.
+	 A forget the name of this type of thing.
+-->
+<html>
+	<head></head>
+	<body>
+		<div>
+			<canvas id="canvas" width="600" height="400>"></canvas>
+			<input type="button" value="STOP" onclick="stop()">
+		</div>
+		<script type="text/javascript">
+			var theta = Math.PI / 100;
+			var sigma = Math.PI / 57;
+			var radius = 120;
+			var radius2 = 85;
+			var innerAngle = Math.PI;
+			var outerAngle = Math.PI / 2;
+			var delay = 3;
+
+			var xs = [];
+			var ys = [];
+			var canvas = document.getElementById('canvas');
+			var c = canvas.getContext('2d');
+			var x = 300;
+			var y = 200;
+			var dx = x + radius * Math.cos(innerAngle);
+			var dy = y + radius * Math.sin(innerAngle);
+			var ddx = dx + radius2 * Math.cos(outerAngle);
+			var ddy = dy + radius2 * Math.sin(outerAngle);
+
+			function drawInner() {
+				c.lineWidth = '3';
+				c.strokeStyle = 'black';
+				c.beginPath();
+				c.moveTo(x,y);
+				c.lineTo(dx,dy);
+				c.stroke();
+			}
+
+			function drawOuter() {
+				c.lineWidth = '3';
+				c.strokeStyle = 'black';
+				c.beginPath();
+				c.moveTo(dx,dy);
+				c.lineTo(ddx,ddy);
+				c.stroke();
+			}
+
+			function drawDot() {
+				c.fillStyle = 'blue';
+				for(var i = 0; i < xs.length; i++) {
+					c.fillRect(xs[i],ys[i],3,3);
+				}				
+			}
+
+			function spin() {
+				c.clearRect(0,0,600,400);
+				innerAngle += theta;
+				outerAngle += sigma;
+				if (innerAngle >= 2* Math.PI) {
+					innerAngle = innerAngle - 2 * Math.PI;
+				}
+				if (outerAngle >= 2* Math.PI) {
+					outerAngle = outerAngle - 2 * Math.PI;
+				}
+				dx = x + (radius * Math.cos(innerAngle));
+				dy = y + (radius * Math.sin(innerAngle));
+				ddx = dx + (radius2 * Math.cos(outerAngle));
+				ddy = dy + (radius2 * Math.sin(outerAngle));
+				xs.push(ddx);
+				ys.push(ddy);
+				drawInner()
+				drawOuter();
+				drawDot();
+			}
+
+			var interval = setInterval(spin,delay);
+
+			function stop() {
+				clearInterval(interval);
+				c.clearRect(0,0,600,400);
+				drawDot();
+			}
+
+		</script>
+	</body>
+</html>

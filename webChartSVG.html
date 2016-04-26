@@ -1,0 +1,21 @@
+<!-- webChartSVG.html
+	 Author: Jason Duffey
+	 Date: 07/2015
+	 A simple webpage to demonstrate my webChartSVG class
+-->
+<html>
+	<head>
+		<title></title>
+		<!--<link rel="stylesheet" type="text/css" href="svgChartStyle.css">-->
+		<script type="text/javascript" src="svgChartScript.js"></script>
+	</head>
+	<body>
+		<div id="container" width="600" height="400"></div>
+		<script type="text/javascript">
+			var jsonData = '{"base":{"min":"0","max":"15","color":"#000000","bgcolor":"#ffffff,#e6e6e6","baseFontColor":"#990000","baseFont":"Verdana, Tahoma, sans-serif","gridlines":"2","linewidth":"2","nodeRadius":"3"},"sets":[{"width":"2","showFill":"0","fillColor":"#444444","color":"#b00b1e","set":[{"Plabel":"A","value":"5"},{"Plabel":"B","value":"8"},{"Plabel":"C","value":"2"},{"Plabel":"D","value":"1"},{"Plabel":"E","value":"11"},{"Plabel":"F","value":"9"},{"Plabel":"G","value":"10"},{"Plabel":"H","value":"2"}]}],"header":{"caption":"This is the title","labels":[{"title":"E"},{"title":"SE"},{"title":"S"},{"title":"SW"},{"title":"W"},{"title":"NW"},{"title":"N"},{"title":"NE"}]},"numeral":{"decimals":"1"}}';
+			console.log(JSON.parse(jsonData));
+			var jsonChart = new WebChart("container", jsonData);
+			window.onload = function() { jsonChart.initilize(); }
+		</script>
+	</body>
+</html>

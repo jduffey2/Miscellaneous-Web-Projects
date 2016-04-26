@@ -1,0 +1,186 @@
+<!-- timer_stop.html
+     Author: Jason Duffey
+     Date: 10/2015
+     An implementation of a spinning wheel. The
+     numbers are randomly chosen on load. The
+     power bar is shown when the button is pushed.
+     "Poor man's Wheel of Fortune"
+     Some other random experiments exploring 'file' input type
+     and the SoundAPI for html
+-->
+<html>
+	<head>
+		<title>Clock/Timer</title>
+	</head>
+	<body>
+    <input type="file" multiple id="files" name="files" onchange="displayFile">
+    <input type="text" id="fileText">
+		<canvas id="myCanvas" width="600" height="500"></canvas>
+    <canvas id="power" width="200" height="30"></canvas>
+    <input type="button" id="spin" onmousedown="start()" onmouseup="stop()" value="Spin">
+    <input type="button" onclick="pause" value="Pause">
+    <input type="button" onclick="start" value="Start">
+    <script>
+      var ctx = new(window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gn = ctx.createGain();
+      osc.connect(gn);
+      gn.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 60;
+      //osc.start();
+
+      function displayFile() {
+        var element = document.getElementById("files").files;
+        var display = document.getElementById("fileText");
+        for (var i = element.length - 1; i >= 0; i--) {
+          display.value += element[i].name + ", ";
+        };
+      }
+
+      function start() {
+        gn.gain.value = 1;
+      }
+
+      function pause() {
+        gn.gain.value = 0;
+      }
+
+      var Slice = function(start, color, value) {
+        this.angle = start;
+        this.colour = color;
+        this.val = value;
+      }
+
+      var wedges = 10;//parseInt(prompt("How many wedges would you like?"));
+      var spokes = 3;
+      var theta = 2*Math.PI / wedges;
+      var dtheta = theta / spokes;
+      var canvas = document.getElementById('myCanvas');
+      var context = canvas.getContext('2d');
+      var x = canvas.width / 2;
+      var y = canvas.height / 2;
+      var radius = 150;
+      var startAngle = 0;
+      var counterClockwise = false;
+      var colorAr = ['red', 'orange', 'yellow', 'green' , 'purple', 'blue', 'violet', 'black', 'indigo', 'hotpink'];
+      
+      //Create the Slices and store them in an array
+      var sliceAr = [];
+      var num = 0;
+      for(var i = 0; i < Math.PI*2; i += theta) {
+        var sliceval = Math.floor(Math.random() * 19);
+        var shape = new Slice(i, colorAr[num], sliceval*50 + 100);
+        sliceAr.push(shape);
+        drawslice(shape.angle, theta, shape.colour, shape.val);
+        num++;
+      }
+      drawspoke();
+      drawpointer();
+
+      //Create the spokes of the wheel
+      function drawspoke() {
+        var alpha = 0;
+        while(alpha < Math.PI*2) {
+          context.fillStyle = 'black';
+          context.fillRect(x+ radius*Math.cos(alpha) -2, y+ radius* Math.sin(alpha)-2, 5,5);
+          alpha += dtheta;
+        }
+      }
+
+      //Create the pointer
+      function drawpointer() {
+        context.save();
+        context.lineWidth = '3';
+        context.strokeStyle = 'gold';
+        context.beginPath();
+        context.moveTo(x + radius +  25, y - 10);
+        context.lineTo(x + radius - 15, y - 10);
+        context.moveTo(x + radius + 25, y - 25);
+        context.lineTo(x + radius + 25, y + 5);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawslice(start, theta, color, text) {
+        context.beginPath();
+        context.arc(x, y, radius, start, start + theta, counterClockwise);
+        context.lineTo(x,y);
+        context.lineTo(x + radius * Math.cos(start), y + radius * Math.sin(start));
+        context.lineWidth = 1;
+        context.fillStyle = color;
+        context.fill();
+        if (color == 'black') {
+          context.fillStyle ='white';
+        }
+        else {
+          context.fillStyle = 'black';
+        }
+        context.font = "20px Georgia";
+        context.textbaseline = 'middle';
+        context.textAlign = 'center';
+        var textx = x + radius/1.5 * Math.cos(start + theta/2);
+        var texty = y + radius/1.5 * Math.sin(start + theta/2);
+        context.fillText(text, textx, texty);
+      }
+
+      function spin() {
+        context.clearRect(0,0, canvas.width, canvas.height);
+        sliceAr.forEach(function(wedge) {
+          wedge.angle += dtheta;
+          if(wedge.angle >= Math.PI*2) {
+            wedge.angle = 0;
+          }
+          drawslice(wedge.angle, theta, wedge.colour, wedge.val);
+        });
+        drawspoke();
+        drawpointer();
+      }
+
+      //setInterval(function() {spin()}, 100)
+      var powerBar;
+      function start() {
+        powerBar = setInterval(runPower,1);
+      }
+
+      function stop() {
+        clearInterval(powerBar);
+        var err = Math.floor(Math.random() * 11);
+        var pos = Math.floor(Math.random() * 2);
+        var base = Math.floor(wedges * spokes * 1.5);
+        var spinNum = Math.floor(base * (power / 100));
+        if(pos) {
+          spinNum += err;
+        }
+        else {
+          spinNum -= err;
+        }
+        var spinTime = setInterval(function() {spin()}, 100);
+        setTimeout(function(){clearInterval(spinTime);}, 100*spinNum);
+        power = 0;
+      }
+
+      var power = 0;
+      var up = true;
+      var powerC = document.getElementById("power");
+      var ctx = powerC.getContext("2d");
+      function runPower() {
+        if(power == 100) up = false;
+        if(power == 0) up = true;
+        if(up) {
+          power+= 2;
+        }
+        else {
+          power-=2;
+        }
+        drawPower();
+      }
+
+      function drawPower() {
+        ctx.clearRect(0,0,powerC.width,powerC.height);
+        ctx.fillStyle = 'red';
+        ctx.fillRect(0,0,2*power,powerC.height);
+      }
+    </script>
+	</body>
+</html>

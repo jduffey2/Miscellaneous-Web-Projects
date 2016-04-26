@@ -1,0 +1,181 @@
+<!-- GameofLife.html
+	 Author: Jason Duffey
+	 Date: 04/2016
+	 A crappy little implementation of Conway's Game of life.
+	 https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+	-->
+<html>
+	<head><title>Game of Life</title></head>
+	<body>
+		<canvas id="canvas" onclick="click_handler(event)"></canvas>
+		<div>
+			<input type="button" id="IterBtn" value="Next" onclick="iterate()" />
+			<input type="button" id="clrBtn" value="Clear" onclick="clearAll()" />
+			<input type="button" id="autoBtn" value="Automate" onclick="automate()" />
+			<input type="textbox" id="iterTB" value="0" />
+			<input type="range" id="speedRng" min="-1" max="4" onchange="updateRange()" value="1" />
+			<input type="textbox" id="speedTB" value="1000 ms" />
+		</div>
+		
+
+		<script type="text/javascript">
+			var field_length = 600;
+			var cell_Length = 10;
+			var iteration = 0;
+			var interval;
+			
+			var canvas = document.getElementById('canvas');
+			canvas.width = field_length;
+			canvas.height = field_length;
+			var c = canvas.getContext('2d');
+			drawGrid();
+
+			var grid = new Array(field_length / cell_Length);
+			for (var i = 0; i < field_length / cell_Length; i++) {
+				grid[i] = new Array(field_length / cell_Length).fill(false);
+			}
+
+			function updateRange() {
+					var myrange = document.getElementById("speedRng").value;
+					alpha = 500 * Math.pow(2,myrange);
+					document.getElementById("speedTB").value = alpha + " ms"
+			}
+
+			function clearAll() {
+				var side_Length = field_length / cell_Length;
+				c.clearRect(0,0,field_length,field_length);
+				for(var i = 0; i < side_Length; i++) {
+					for(var j = 0; j < side_Length; j++) {
+						grid[i][j] = false;
+						clearCell(i,j);
+					}
+				}
+				drawGrid();
+				iteration = 0;
+				document.getElementById("iterTB").value = iteration;
+				if(interval !== "undefined") {
+					clearInterval(interval);
+					interval = false;
+				}
+			}
+
+			function automate() {
+				if(interval) {
+					clearInterval(interval);
+					interval = false;
+				}
+				else {
+					var myrange = document.getElementById("speedRng").value;
+					alpha = 500 * Math.pow(2,myrange);
+					interval = setInterval( function() { iterate(); }, alpha);
+				}
+				
+			}
+
+			function iterate() {
+				var new_grid = new Array(field_length / cell_Length);
+				for (var i = 0; i < field_length / cell_Length; i++) {
+					new_grid[i] = new Array(field_length / cell_Length).fill(false);
+				}
+
+				var side_Length = field_length / cell_Length;
+				for(var i = 0; i < side_Length; i++) {
+					for(var j = 0; j < side_Length; j++) {
+						var count = 0;
+						
+						if(j > 0) {
+							if(i > 0) {
+								if(grid[i - 1][j - 1]) count++;
+							}
+							if(grid[i][j - 1]) count++;
+							if(i < side_Length - 1) {
+								if(grid[i + 1][j - 1]) count++;
+							}	
+						}
+						
+						if(i > 0) {
+							if(grid[i - 1][j]) count++;
+						}
+						if(i < side_Length - 1) {
+							if(grid[i + 1][j]) count++;
+						}						
+
+						if(j < side_Length - 1) {
+							if(i > 0) {
+								if(grid[i - 1][j + 1]) count++;
+							}
+							if(grid[i][j + 1]) count++;
+							if(i < side_Length - 1) {
+								if(grid[i + 1][j + 1]) count++;
+							}			
+						}
+
+						if ((count < 2 || count > 3)) {
+							new_grid[i][j] = false;
+							if(grid[i][j] == true) {
+								clearCell(i,j);
+							}
+						} else if (count === 3) {
+							new_grid[i][j] = true;
+							if(grid[i][j] == false) {
+								fillCell(i,j);
+							}	
+						}
+						else {
+							new_grid[i][j] = grid[i][j];
+						}
+					}
+				}
+				grid = new_grid;
+				iteration++;
+				document.getElementById("iterTB").value = iteration;
+			}
+
+			function fillCell(x,y) {
+				c.beginPath();
+				c.rect((x * cell_Length), (y * cell_Length), cell_Length, cell_Length);
+				c.fill();
+			}
+
+			function clearCell(x,y) {
+				c.clearRect(x * cell_Length, y * cell_Length, cell_Length, cell_Length);
+			}
+
+			function click_handler(event) {
+				var x = event.clientX - 7
+				var y = event.clientY - 7;
+				var cellX = Math.floor(x / cell_Length);
+				var cellY = Math.floor(y / cell_Length);
+				
+				if(grid[cellX][cellY]) {
+					clearCell(cellX,cellY);
+					grid[cellX][cellY] = false;
+				}
+				else {
+					fillCell(cellX, cellY);
+					grid[cellX][cellY] = true;
+				}
+			}
+
+			function drawGrid() {
+				c.lineWidth = '1';
+				c.strokeStyle = 'black';
+
+				for(var i = 0; i < field_length; i += cell_Length) {
+					c.beginPath();
+					c.moveTo(0,i);
+					c.lineTo(field_length,i);
+					c.stroke();
+				}
+				for(var j = 0; j < field_length; j += cell_Length) {
+					c.beginPath();
+					c.moveTo(j,0);
+					c.lineTo(j,field_length);
+					c.stroke();
+				}
+				
+			}
+
+		</script>
+	</body>
+</html>
